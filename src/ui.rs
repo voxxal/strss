@@ -11,7 +11,7 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Modifier, Style},
-    text::Span,
+    text::{Span, Spans, Text},
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
 };
@@ -68,11 +68,12 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &State) {
 
     let buf: &[u8] = content.as_bytes();
 
-    let paragraph = Paragraph::new(Span::from(from_read_with_decorator(
+    let paragraph = Paragraph::new(Text::raw(from_read_with_decorator(
         buf,
         usize::MAX,
         RichDecorator::new(),
     )))
+    .block(Block::default())
     .wrap(Wrap { trim: true })
     .scroll((state.scroll, 0));
     f.render_widget(paragraph, chunks[1]);
