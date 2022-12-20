@@ -1,0 +1,16 @@
+[package]
+name = "strss"
+description = "simple terminal rss reader"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crossterm = { version = "0.19" }
+thiserror = "1.0"
+rss = "2.0"
+reqwest = { version = "0.11", features = ["blocking"] }
+anyhow = "1.0"
+cursive-markup = "0.3.0"
+tui = "0.19.0"
