@@ -64,6 +64,11 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, tick_rate: Duration) -> Result<()
                                 }
                             }
                         }
+                        Page::Article(_) => {
+                            if mouse.column >= 20 && mouse.column < 26 && mouse.row == 0 {
+                                state.navigate(Page::Feed("reading"))
+                            }
+                        }
                         _ => (),
                     },
                     MouseEventKind::ScrollUp => state.scroll_up(),

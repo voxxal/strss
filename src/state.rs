@@ -139,7 +139,6 @@ impl<'a> State<'a> {
                     id: item.guid.clone().unwrap(),
                 }
             }
-            _ => (),
         }
         self.scroll = 0;
         self.page = page;

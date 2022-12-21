@@ -5,7 +5,7 @@ use chrono::DateTime;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle},
 };
 use html2text::{from_read_with_decorator, render::text_renderer::RichDecorator};
 use rss::Source;
@@ -48,6 +48,7 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &State) {
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(2), Constraint::Min(0)].as_ref())
         .split(size);
+
     match state.page_state {
         PageState::Empty => draw_not_found(f, state, chunks),
         PageState::Feed { .. } => draw_feed(f, chunks, state, &state.page_state),
@@ -64,6 +65,8 @@ fn draw_not_found<B: Backend>(f: &mut Frame<B>, state: &State, chunks: Vec<Rect>
 }
 
 fn title_widget(title: &str) -> Paragraph {
+    let mut stdout = io::stdout();
+    execute!(stdout, SetTitle(title)).unwrap();
     Paragraph::new(Span::styled(
         title,
         Style::default().add_modifier(Modifier::BOLD),
@@ -130,7 +133,27 @@ fn draw_article<B: Backend>(
     state: &State,
     page_state: &PageState,
 ) {
-    if let PageState::Article { item, ..} = page_state {
+    if let PageState::Article { item, .. } = page_state {
+        let navbar = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(25),
+                ]
+                .as_ref(),
+            )
+            .split(chunks[0]);
+        f.render_widget(
+            Paragraph::new(Span::styled(
+                "<- Back",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))
+            .block(Block::default().borders(Borders::BOTTOM)),
+            navbar[0],
+        );
+
         f.render_widget(
             title_widget(&format!(
                 "{} - {}",
@@ -141,8 +164,10 @@ fn draw_article<B: Backend>(
                     .unwrap_or(String::from("Unknown")),
                 item.title.clone().unwrap_or(String::from("Untitled"))
             )),
-            chunks[0],
+            navbar[1],
         );
+
+        f.render_widget(Block::default().borders(Borders::BOTTOM), navbar[2]);
 
         let content = item.content.as_ref().map(|x| x.as_str()).unwrap_or("");
         let buf: &[u8] = content.as_bytes();
