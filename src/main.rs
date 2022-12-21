@@ -27,10 +27,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn run<B: Backend>(
-    terminal: &mut Terminal<B>,
-    tick_rate: Duration,
-) -> Result<()> {
+fn run<B: Backend>(terminal: &mut Terminal<B>, tick_rate: Duration) -> Result<()> {
     let mut state = State::new();
     let mut last_tick = Instant::now();
     state.navigate(Page::Feed("reading"));
@@ -47,18 +44,25 @@ fn run<B: Backend>(
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Up => state.scroll_up(),
                     KeyCode::Down => state.scroll_down(),
+                    KeyCode::Left => state.navigate(Page::Feed("reading")),
                     _ => (),
                 },
                 Event::Mouse(mouse) => match mouse.kind {
                     MouseEventKind::Down(MouseButton::Left) => match state.page {
                         Page::Feed(id) => {
-                            let content_y = mouse.column - 2 + state.scroll;
-                            let selection = content_y / 3;
-                            let dest = match &state.feeds.get(id) {
-                                Some(feed) => Page::Article(feed.items[selection as usize].clone()),
-                                None => Page::Empty
-                            };
-                            state.navigate(dest);
+                            if mouse.row > 2 {
+                                let content_y = mouse.row - 2 + state.scroll;
+                                let selection = content_y / 3;
+                                if (content_y + 1) % 3 != 0 {
+                                    let dest = match &state.feeds.get(id) {
+                                        Some(feed) => {
+                                            Page::Article(feed.items[selection as usize].clone())
+                                        }
+                                        None => Page::Empty,
+                                    };
+                                    state.navigate(dest);
+                                }
+                            }
                         }
                         _ => (),
                     },

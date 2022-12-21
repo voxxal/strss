@@ -51,7 +51,7 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &State) {
     match state.page_state {
         PageState::Empty => draw_not_found(f, state, chunks),
         PageState::Feed { .. } => draw_feed(f, chunks, state, &state.page_state),
-        _ => (),
+        PageState::Article { .. } => draw_article(f, chunks, state, &state.page_state),
     }
 }
 
@@ -121,5 +121,40 @@ fn draw_feed<B: Backend>(
             .scroll((state.scroll, 0))
             .wrap(Wrap { trim: true });
         f.render_widget(content, chunks[1]);
+    }
+}
+
+fn draw_article<B: Backend>(
+    f: &mut Frame<B>,
+    chunks: Vec<Rect>,
+    state: &State,
+    page_state: &PageState,
+) {
+    if let PageState::Article { item, ..} = page_state {
+        f.render_widget(
+            title_widget(&format!(
+                "{} - {}",
+                item.source
+                    .clone()
+                    .unwrap()
+                    .title
+                    .unwrap_or(String::from("Unknown")),
+                item.title.clone().unwrap_or(String::from("Untitled"))
+            )),
+            chunks[0],
+        );
+
+        let content = item.content.as_ref().map(|x| x.as_str()).unwrap_or("");
+        let buf: &[u8] = content.as_bytes();
+
+        let paragraph = Paragraph::new(Text::raw(from_read_with_decorator(
+            buf,
+            usize::MAX,
+            RichDecorator::new(),
+        )))
+        .scroll((state.scroll, 0))
+        .wrap(Wrap { trim: true });
+
+        f.render_widget(paragraph, chunks[1]);
     }
 }

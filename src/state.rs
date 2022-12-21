@@ -148,7 +148,7 @@ impl<'a> State<'a> {
     pub fn on_tick(&self) {}
 
     pub fn scroll_up(&mut self) {
-        self.scroll = self.scroll.checked_sub(1).unwrap_or(0);
+        self.scroll = self.scroll.saturating_sub(1);
     }
 
     pub fn scroll_down(&mut self) {
