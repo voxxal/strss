@@ -9,14 +9,14 @@ use crossterm::{
 use html2text::{from_read_with_decorator, render::text_renderer::RichDecorator};
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Modifier, Style},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
     text::{Span, Spans, Text},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     Frame, Terminal,
 };
 
-use crate::state::State;
+use crate::state::{Feed, Page, State};
 
 pub fn setup_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
@@ -45,12 +45,14 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &State) {
         .constraints([Constraint::Length(2), Constraint::Min(0)].as_ref())
         .split(size);
 
-    let title = state
-        .channel
-        .as_ref()
-        .map(|x| x.title.clone())
-        .unwrap_or(String::from("strss"));
+    match &state.page {
+        Page::Feed(id) => draw_feed(f, state, chunks, state.feeds.get(id).unwrap()), // TODO do a 404 or smth
+        _ => (),
+    }
+}
 
+fn draw_feed<B: Backend>(f: &mut Frame<B>, state: &State, chunks: Vec<Rect>, feed: &Feed) {
+    let title = &feed.name;
     let paragraph = Paragraph::new(Span::styled(
         title,
         Style::default().add_modifier(Modifier::BOLD),
@@ -59,22 +61,18 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &State) {
     .alignment(Alignment::Center);
     f.render_widget(paragraph, chunks[0]);
 
-    let content = state
-        .channel
-        .as_ref()
-        .map(|x| x.items[0].content.clone())
-        .flatten()
-        .unwrap_or(String::from(""));
+    let items: Vec<ListItem> = feed
+        .items
+        .iter()
+        .map(|i| ListItem::new(Span::from(i.title().unwrap_or("Untitled"))))
+        .collect();
 
-    let buf: &[u8] = content.as_bytes();
-
-    let paragraph = Paragraph::new(Text::raw(from_read_with_decorator(
-        buf,
-        usize::MAX,
-        RichDecorator::new(),
-    )))
-    .block(Block::default())
-    .wrap(Wrap { trim: true })
-    .scroll((state.scroll, 0));
-    f.render_widget(paragraph, chunks[1]);
+    let list = List::new(items)
+        .highlight_style(
+            Style::default()
+                .bg(Color::LightGreen)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+    f.render_widget(list, chunks[1]);
 }

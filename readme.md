@@ -6,6 +6,7 @@
 ## Features
 - Load any feed via command line argument (tbd)
 - Group multiple feeds info a folder, then read in chronological order (tbd)
+- Stores old xss to have an archive
 
 ## Contribution
 PRs welcome
