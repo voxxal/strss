@@ -4,7 +4,7 @@ use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, MouseEventKind};
 use reqwest::blocking as reqwest;
 use rss::Channel;
-use state::State;
+use state::{State, Page};
 use tui::{backend::Backend, Terminal};
 
 mod state;
@@ -34,6 +34,7 @@ fn run<B: Backend>(
     tick_rate: Duration,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
+    state.navigate(Page::Feed("reading"));
     loop {
         terminal.draw(|f| ui::draw_ui(f, &state))?;
 

@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use chrono::{DateTime, NaiveDateTime};
-use rss::{Channel, Item};
+use chrono::DateTime;
+use rss::{Channel, Item, Source};
 
 use crate::fetch_feed;
 
-pub enum Page {
-    Feed(String),
-    Article,
+pub enum Page<'a> {
+    Empty,
+    Feed(&'a str),
+    Article(&'a Item),
 }
 
-pub struct State {
+pub struct State<'a> {
     pub scroll: u16,
-    pub page: Page,
+    pub page: Page<'a>,
     pub feeds: HashMap<String, Feed>,
 }
 
@@ -21,7 +22,7 @@ pub struct Feed {
     pub id: String,
     pub name: String,
     pub channels: Vec<Channel>,
-    pub items: Vec<Item>,
+    pub items: Vec<Item>, // Item should probably hold more info which allows us to not write such terrible code in ui.rs
 }
 
 impl Feed {
@@ -44,15 +45,24 @@ impl Feed {
 
     fn rebuild_items(&mut self) {
         let mut items_unflattened = vec![];
+
         for channel in &self.channels {
-            items_unflattened.push(channel.items().to_vec());
+            let mut items = channel.items().to_vec();
+            for item in &mut items {
+                item.set_source(Source {
+                    url: channel.link.clone(),
+                    title: Some(channel.title.clone()),
+                })
+            }
+
+            items_unflattened.push(items);
         }
 
         let mut items = items_unflattened
             .into_iter()
             .flatten()
             .collect::<Vec<Item>>();
-            
+
         items.sort_by(|a, b| {
             DateTime::parse_from_rfc2822(
                 a.pub_date()
@@ -66,6 +76,7 @@ impl Feed {
                 )
                 .unwrap(),
             )
+            .reverse()
         });
 
         self.items = items;
@@ -78,22 +89,31 @@ impl Feed {
     }
 }
 
-impl State {
+impl<'a> State<'a> {
     pub fn new() -> Self {
         let id = String::from("reading"); //who should own the id?
         let mut state = Self {
             scroll: 0,
-            page: Page::Feed(id.clone()),
+            page: Page::Empty,
             feeds: HashMap::new(),
         };
 
-
         state.feeds.insert(
             id.clone(),
-            Feed::new(id, vec!["https://experimentalhistory.substack.com/feed.xml", "https://xkcd.com/rss.xml"])
+            Feed::new(
+                id,
+                vec![
+                    "https://experimentalhistory.substack.com/feed.xml",
+                    "https://xkcd.com/rss.xml",
+                ],
+            ),
         );
 
         state
+    }
+
+    pub fn navigate(&mut self, page: Page<'a>) {
+        self.page = page;
     }
 
     pub fn on_tick(&self) {}
