@@ -67,6 +67,7 @@ fn draw_not_found<B: Backend>(f: &mut Frame<B>, state: &State, chunks: Vec<Rect>
 fn title_widget(title: &str) -> Paragraph {
     let mut stdout = io::stdout();
     execute!(stdout, SetTitle(title)).unwrap();
+
     Paragraph::new(Span::styled(
         title,
         Style::default().add_modifier(Modifier::BOLD),
@@ -138,13 +139,14 @@ fn draw_article<B: Backend>(
             .direction(Direction::Horizontal)
             .constraints(
                 [
-                    Constraint::Percentage(25),
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(25),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(70),
+                    Constraint::Percentage(15),
                 ]
                 .as_ref(),
             )
             .split(chunks[0]);
+
         f.render_widget(
             Paragraph::new(Span::styled(
                 "<- Back",

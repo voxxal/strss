@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, cmp::Reverse};
 
 use anyhow::Result;
-use chrono::DateTime;
+use chrono::{DateTime, FixedOffset};
 use rss::{Channel, Guid, Item, Source};
 
 use crate::fetch_feed;
@@ -22,7 +22,7 @@ pub struct State<'a> {
     pub scroll: u16,
     pub page: Page<'a>,
     pub page_state: PageState<'a>,
-    pub feeds: HashMap<String, Feed>,
+    pub feeds: HashMap<String, Feed>, // TODO move to Feeds type
 }
 
 #[derive(Clone)]
@@ -71,20 +71,15 @@ impl Feed {
             .flatten()
             .collect::<Vec<Item>>();
 
-        items.sort_by(|a, b| {
-            DateTime::parse_from_rfc2822(
-                a.pub_date()
-                    .unwrap_or("Thursday, January 1, 1970 12:00:00 AM GMT"),
+        items.sort_by_key(|i| {
+            Reverse(
+                i.pub_date()
+                    .map(DateTime::parse_from_rfc2822)
+                    .transpose()
+                    .ok()
+                    .flatten()
+                    .unwrap_or(DateTime::<FixedOffset>::MIN_UTC.into()),
             )
-            .unwrap()
-            .cmp(
-                &DateTime::parse_from_rfc2822(
-                    b.pub_date()
-                        .unwrap_or("Thursday, January 1, 1970 12:00:00 AM GMT"),
-                )
-                .unwrap(),
-            )
-            .reverse()
         });
 
         self.items = items;

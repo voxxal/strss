@@ -7,6 +7,7 @@ use rss::Channel;
 use state::{Page, State};
 use tui::{backend::Backend, Terminal};
 
+// mod html;
 mod state;
 mod ui;
 
@@ -65,7 +66,7 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, tick_rate: Duration) -> Result<()
                             }
                         }
                         Page::Article(_) => {
-                            if mouse.column >= 20 && mouse.column < 26 && mouse.row == 0 {
+                            if mouse.column >= 20 && mouse.column <= 26 && mouse.row == 0 {
                                 state.navigate(Page::Feed("reading"))
                             }
                         }
