@@ -1,10 +1,10 @@
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode, MouseEventKind};
+use crossterm::event::{self, Event, KeyCode, MouseButton, MouseEventKind};
 use reqwest::blocking as reqwest;
 use rss::Channel;
-use state::{State, Page};
+use state::{Page, State};
 use tui::{backend::Backend, Terminal};
 
 mod state;
@@ -15,7 +15,6 @@ fn main() -> Result<()> {
 
     let res = run(
         &mut terminal,
-        State::new(),
         Duration::from_millis(42), /* Around 24fps */
     );
 
@@ -30,9 +29,9 @@ fn main() -> Result<()> {
 
 fn run<B: Backend>(
     terminal: &mut Terminal<B>,
-    mut state: State,
     tick_rate: Duration,
 ) -> Result<()> {
+    let mut state = State::new();
     let mut last_tick = Instant::now();
     state.navigate(Page::Feed("reading"));
     loop {
@@ -51,6 +50,18 @@ fn run<B: Backend>(
                     _ => (),
                 },
                 Event::Mouse(mouse) => match mouse.kind {
+                    MouseEventKind::Down(MouseButton::Left) => match state.page {
+                        Page::Feed(id) => {
+                            let content_y = mouse.column - 2 + state.scroll;
+                            let selection = content_y / 3;
+                            let dest = match &state.feeds.get(id) {
+                                Some(feed) => Page::Article(feed.items[selection as usize].clone()),
+                                None => Page::Empty
+                            };
+                            state.navigate(dest);
+                        }
+                        _ => (),
+                    },
                     MouseEventKind::ScrollUp => state.scroll_up(),
                     MouseEventKind::ScrollDown => state.scroll_down(),
                     _ => (),

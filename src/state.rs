@@ -2,22 +2,30 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::DateTime;
-use rss::{Channel, Item, Source};
+use rss::{Channel, Guid, Item, Source};
 
 use crate::fetch_feed;
 
 pub enum Page<'a> {
     Empty,
     Feed(&'a str),
-    Article(&'a Item),
+    Article(Item),
+}
+
+pub enum PageState<'a> {
+    Empty,
+    Feed { id: &'a str, feed: Feed },
+    Article { id: Guid, item: Item },
 }
 
 pub struct State<'a> {
     pub scroll: u16,
     pub page: Page<'a>,
+    pub page_state: PageState<'a>,
     pub feeds: HashMap<String, Feed>,
 }
 
+#[derive(Clone)]
 pub struct Feed {
     pub id: String,
     pub name: String,
@@ -95,6 +103,7 @@ impl<'a> State<'a> {
         let mut state = Self {
             scroll: 0,
             page: Page::Empty,
+            page_state: PageState::Empty,
             feeds: HashMap::new(),
         };
 
@@ -113,6 +122,26 @@ impl<'a> State<'a> {
     }
 
     pub fn navigate(&mut self, page: Page<'a>) {
+        match page {
+            Page::Empty => self.page_state = PageState::Empty,
+            Page::Feed(id) => match self.feeds.get(id) {
+                Some(feed) => {
+                    self.page_state = PageState::Feed {
+                        id,
+                        feed: (*feed).clone(),
+                    }
+                }
+                None => self.page_state = PageState::Empty,
+            },
+            Page::Article(ref item) => {
+                self.page_state = PageState::Article {
+                    item: item.clone(),
+                    id: item.guid.clone().unwrap(),
+                }
+            }
+            _ => (),
+        }
+        self.scroll = 0;
         self.page = page;
     }
 
