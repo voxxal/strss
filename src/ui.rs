@@ -7,7 +7,7 @@ use crossterm::{
     execute,
     terminal::{enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle},
 };
-use html2text::{from_read_with_decorator, render::text_renderer::RichDecorator};
+use html2text::{from_read_rich, from_read_with_decorator, render::text_renderer::RichDecorator};
 use rss::Source;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -18,7 +18,10 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::state::{Feed, Page, PageState, State};
+use crate::{
+    html::to_spans,
+    state::{Feed, Page, PageState, State},
+};
 
 pub fn setup_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
@@ -174,13 +177,9 @@ fn draw_article<B: Backend>(
         let content = item.content.as_ref().map(|x| x.as_str()).unwrap_or("");
         let buf: &[u8] = content.as_bytes();
 
-        let paragraph = Paragraph::new(Text::raw(from_read_with_decorator(
-            buf,
-            usize::MAX,
-            RichDecorator::new(),
-        )))
-        .scroll((state.scroll, 0))
-        .wrap(Wrap { trim: true });
+        let paragraph = Paragraph::new(to_spans(from_read_rich(buf, usize::MAX)))
+            .scroll((state.scroll, 0))
+            .wrap(Wrap { trim: true });
 
         f.render_widget(paragraph, chunks[1]);
     }

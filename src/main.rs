@@ -7,7 +7,7 @@ use rss::Channel;
 use state::{Page, State};
 use tui::{backend::Backend, Terminal};
 
-// mod html;
+mod html;
 mod state;
 mod ui;
 

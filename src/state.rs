@@ -1,4 +1,4 @@
-use std::{collections::HashMap, cmp::Reverse};
+use std::{cmp::Reverse, collections::HashMap};
 
 use anyhow::Result;
 use chrono::{DateTime, FixedOffset};
@@ -32,6 +32,7 @@ pub struct Feed {
     pub channels: Vec<Channel>,
     pub items: Vec<Item>, // Item should probably hold more info which allows us to not write such terrible code in ui.rs
 }
+
 
 impl Feed {
     pub fn new(id: String, urls: Vec<&str>) -> Self {
@@ -71,7 +72,7 @@ impl Feed {
             .flatten()
             .collect::<Vec<Item>>();
 
-        items.sort_by_key(|i| {
+        items.sort_by_cached_key(|i| {
             Reverse(
                 i.pub_date()
                     .map(DateTime::parse_from_rfc2822)
